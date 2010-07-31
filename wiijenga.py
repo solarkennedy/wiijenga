@@ -212,28 +212,17 @@ while True:
 	
 	try: 
 		totalweight = float(Sensors[0].weight + Sensors[1].weight + Sensors[2].weight + Sensors[3].weight)
-#		x_balance = (float(gsc(readings,'right_top')+gsc(readings,'right_bottom'))) / (float(gsc(readings,'left_top')+gsc(readings,'left_bottom')))
-		x_balance = (float(Sensors[1].weight + Sensors[3].weight) / float(Sensors[0].weight + Sensors[2].weight))/100
 		x_balance = (float(Sensors[1].weight + Sensors[3].weight) - float(Sensors[0].weight + Sensors[2].weight)) / totalweight
 		if x_balance > 1:
 			x_balance = 1
 		elif x_balance < -1:
 			x_balance = -1
-#			x_balance = (((float(gsc(readings,'left_top')+gsc(readings,'left_bottom'))) / (float(gsc(readings,'right_top')+gsc(readings,'right_bottom'))))*-1.)+1.
-#		else:
-#			x_balance = x_balance -1.
-#		y_balance = (float(gsc(readings,'left_bottom')+gsc(readings,'right_bottom'))) / (float(gsc(readings,'left_top')+gsc(readings,'right_top')))
-		y_balance = (float(Sensors[2].weight + Sensors[3].weight) / float(Sensors[0].weight + Sensors[1].weight))/100
 		y_balance = (float(Sensors[2].weight + Sensors[3].weight) - float(Sensors[0].weight + Sensors[1].weight)) / totalweight
 		if y_balance > 1:
 			y_balance = 1
 		elif y_balance < -1:
 			y_balance = -1
-#		if y_balance > 1:
-#			y_balance = (((float(gsc(readings,'left_top')+gsc(readings,'right_top'))) / (float(gsc(readings,'left_bottom')+gsc(readings,'right_bottom'))))*-1.)+1.
-#		else:
-#			y_balance = y_balance -1.
-		print "x: " + str(x_balance) + "    y: " + str(y_balance)
+		#print "x: " + str(x_balance) + "    y: " + str(y_balance)
 
 	except:
 		x_balance = 1
@@ -246,8 +235,6 @@ while True:
 
 	screen.fill(bgcolour) # blank the screen.
 	
-	# line up the lines
-
 	xmid = screen_res[0]/2
 	ymid = screen_res[1]/2
 	

@@ -1,5 +1,9 @@
 #!/usr/bin/python
-"""scalesgui.py
+"""
+WiiJenga
+Kyle Anderson
+GPL
+Derived from http://abstrakraft.org/cwiid/ticket/63 by TBBle
 """
 
 
@@ -42,7 +46,7 @@ class WeightSprite(pygame.sprite.Sprite):
 		
 	def update(self):
 		global screen_res, sys_font_weight_fgcolour, sys_font_weight, screen_res
-		self.text = "%.2f" % self.weight
+		self.text = str(self.weight) + " Blocks"
 		self.image = sys_font_weight.render(self.text, True, sys_font_weight_fgcolour)
 		self.rect = self.image.get_rect()
 		self.rect.bottomright = screen_res
@@ -85,7 +89,7 @@ def gsc(readings, pos):
 
 class Sensor:
         def __init__(self, location):
-		self.samples= 10
+		self.samples= 100
 		self.location = location
 		self.tarevalue = float(0)
 		self.values = list(0 for x in range(self.samples))
@@ -94,18 +98,25 @@ class Sensor:
 
         def update(self):
 		balancedata = wiimote.state['balance']
-		self.values.pop
+		self.values.pop()
 		self.values.insert(0,float(gsc(balancedata,self.location)))
-		#value=float(gsc(balancedata,self.location))
+		#print "we have " + str(len(self.values)) + "values"
 		self.smoothvalues = smoothListGaussian(self.values)
 		self.weight=float( self.smoothvalues[self.samples/2] - self.tarevalue )
 
 	def tare(self):
-		self.update()
-		self.tarevalue = float( self.smoothvalues[self.samples/2] )
+		tarearray = []
+		for i in range(50):
+			balancedata = wiimote.state['balance']
+			tarearray.append(float(gsc(balancedata,self.location)))
+			pygame.time.wait(10)	
+		taresmoothvalues = smoothListGaussian(tarearray)
+		for i in range(50):
+			self.tarevalue += taresmoothvalues[i]
+		self.tarevalue = self.tarevalue / 50
 
 
-def smoothListGaussian(list,strippedXs=False,degree=5):  
+def smoothListGaussian(list,strippedXs=False,degree=50):  
 	list = [list[0]]*(degree-1) + list + [list[-1]]*degree
 	window=degree*2-1  
 	weight=numpy.array([1.0]*window)  
@@ -188,8 +199,11 @@ screen = pygame.display.set_mode(screen_res, screen_options)
 pygame.display.set_caption("scales application")
 
 weight_sprite = WeightSprite()
-weight_sprite.weight = 40.33
+weight_sprite.weight = 0.00
 frame = 0
+
+led = cwiid.LED1_ON
+wiimote.led = led
 
 while True:
 	for event in pygame.event.get():
@@ -199,16 +213,22 @@ while True:
 			elif event.key == K_F11:
 				for i in range(4):
 					Sensors[i].tare()
+	
+	readings = wiimote.state['balance']
+
 	wiimote.request_status()
 	frame = frame + 1
 	if frame == 50:
 		frame = 0
-		weight = (calcweight(wiimote.state['balance'], named_calibration) / 100.0)
-		print "%.2fkg" % weight
-		weight_sprite.weight = weight
-	
-	
-	readings = wiimote.state['balance']
+		weight = 0
+		for i in range(10):
+			for j in range(4):
+				#weight += Sensors[j].values[i] - Sensors[j].tarevalue
+				weight += Sensors[j].smoothvalues[i] - Sensors[j].tarevalue
+		weight = weight / 40 / .39
+		#weight = (calcweight(wiimote.state['balance'], named_calibration) / 100.0)
+		#print "%.2fkg" % weight
+		weight_sprite.weight = int(round(weight))
 	
 	try: 
 		totalweight = float(Sensors[0].weight + Sensors[1].weight + Sensors[2].weight + Sensors[3].weight)
@@ -228,10 +248,9 @@ while True:
 		x_balance = 1
 		y_balance = 1
 	
-	#print "readings:",readings
 	for i in range(4):
 		Sensors[i].update()
-		print "Sensor " + Sensors[i].location + " wight: " + str(Sensors[i].weight) + "     tare: " + str(Sensors[i].tarevalue)  
+#		print "Sensor " + Sensors[i].location + " wight: " + str(Sensors[i].weight) + "     tare: " + str(Sensors[i].tarevalue)  
 
 	screen.fill(bgcolour) # blank the screen.
 	
@@ -247,7 +266,6 @@ while True:
 	pygame.draw.line(screen, (255,0,255), (0,ymid + block/2), (screen_res[0],ymid + block/2), 2)
 	pygame.draw.line(screen, (255,0,255), (0,ymid - block/2), (screen_res[0],ymid - block/2), 2)
 
-	pygame.draw.rect(screen, (0,255,255), (xmid - (block * 1.5), ymid - (block * 1.5) , block * 3 ,  block * 3), 2)
 	pygame.draw.rect(screen, (255,255,255), (xmid - (block * .5), ymid - (block * .5) , block  ,  block ), 2)
 
 	weight_sprite.update()
@@ -256,7 +274,18 @@ while True:
 	
 	xpos = (x_balance * (screen_res[0]/2)) + (screen_res[0]/2)
 	ypos = (y_balance * (screen_res[1]/2)) + (screen_res[1]/2)
-		
+	
+	if xpos > (xmid + (block * 1.5)) or xpos < (xmid - (block * 1.5)) or ypos > ymid + (block * 1.5) or ypos < ymid - (block * 1.5):
+			boxcolor=(255,0,0)
+			led ^= cwiid.LED1_ON
+			wiimote.led = led
+	else:
+			boxcolor=(0,124,255)
+			led = cwiid.LED1_ON
+			wiimote.led = cwiid.LED1_ON
+
+	pygame.draw.rect(screen, boxcolor, (xmid - (block * 1.5), ymid - (block * 1.5) , block * 3 ,  block * 3), 2)
+
 	#print "balance:", x_balance, y_balance
 	#print "position:", xpos,ypos
 	pygame.draw.circle(screen, (255,0,0), (int(xpos), int(ypos)), 5)

@@ -196,11 +196,15 @@ if int(sconf.get("display", "opengl")) >= 1:
 	screen_options = screen_options | pygame.OPENGL
 
 screen = pygame.display.set_mode(screen_res, screen_options)
-pygame.display.set_caption("scales application")
+pygame.display.set_caption("Wii Jenga")
 
 weight_sprite = WeightSprite()
 weight_sprite.weight = 0.00
 frame = 0
+
+font = pygame.font.SysFont(sconf.get("font_weight", "face"), 12)
+text = font.render('F11: Tare      F12: Quit', True, (255,255, 255), (0, 0, 0))
+textRect = text.get_rect()
 
 led = cwiid.LED1_ON
 wiimote.led = led
@@ -271,6 +275,7 @@ while True:
 	weight_sprite.update()
 	
 	screen.blit(weight_sprite.image, weight_sprite.rect)
+	screen.blit(text, textRect)
 	
 	xpos = (x_balance * (screen_res[0]/2)) + (screen_res[0]/2)
 	ypos = (y_balance * (screen_res[1]/2)) + (screen_res[1]/2)
